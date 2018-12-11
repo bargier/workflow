@@ -1,11 +1,12 @@
 workdir: '/gpfs/tgml/bargier/projet/run_235'
 
-FASTQ_DIR = ''
+FASTQ_DIR = '/gpfs/tgml/reads/quality/qc-ngs-tgml/runs/Run_235_NS500-142_06.12.2018_SK_BSoS/data/fastq/'
 file_handler = open("sample.txt")
 CHIP2INPUT = dict()
 
 
 for line in file_handler:
+	line = line.rstrip("\r").rstrip("\n")
 	token = line.split("\t")
 	CHIP2INPUT[token[1]] = token[0]
 
@@ -26,36 +27,34 @@ rule final:
 		expand('output/bamCoverage/{smp}.bw', smp = SAMPLE),  \
                 expand('output/macs2/{smp}/{smp}_peaks.bed', smp=CHIP2INPUT.keys())
 	threads: 1
-	conda: "env/env.yaml"
-
 
 rule fastqc: #quality control
-	input: r1 = os.path.join(FASTQ_DIR, '{smp}_R1.fq.gz'), 
-		r2 = os.path.join(FASTQ_DIR, '{smp}_R2.fq.gz')
+	input: r1 = FASTQ_DIR + '{smp}_R1_001.fastq.gz', 
+		r2 = FASTQ_DIR + '{smp}_R2_001.fastq.gz'
 	output: 'output/fastqc/{smp}/done'
 	threads: 1
 	conda: "env/env.yaml"
-	shell: '''fastqc - o output/fastqc/{wildcards.smp} {input.r1} {input.r2}
+	shell: '''fastqc -o output/fastqc/{wildcards.smp} {input.r1} {input.r2}
 		touch {output}
 		'''
 
 rule sickle: #trim
-	input: r1 = os.path.join(FASTQ_DIR, '{smp}_R1.fq.gz'), 
-		r2 = os.path.join(FASTQ_DIR, '{smp}_R2.fq.gz')
-	output: r1 = 'output/sickle/{smp}_R1.fq.gz',
-		r2 = 'output/sickle/{smp}_R2.fq.gz',
-		sing = 'output/sickle/{smp}_sing.fq.gz'
+	input: r1 = FASTQ_DIR + '{smp}_R1_001.fastq.gz', 
+		r2 = FASTQ_DIR + '{smp}_R2_001.fastq.gz'
+	output: r1 = 'output/sickle/{smp}_R1_001.fastq.gz',
+		r2 = 'output/sickle/{smp}_R2_001.fastq.gz',
+		sing = 'output/sickle/{smp}_sing.fastq.gz'
 	threads: 1
 	conda: "env/env.yaml"
 	shell: 'sickle pe -f {input.r1} -r {input.r2} -o {output.r1} -p {output.r2} -s{output.sing} -t sanger -g'
 
 rule bowtie: #map
-        input: r1 = 'output/sickle/{smp}_R1.fq.gz', r2 = 'output/sickle/{smp}_R2.fq.gz',
+        input: r1 = 'output/sickle/{smp}_R1_001.fastq.gz', r2 = 'output/sickle/{smp}_R2_001.fastq.gz',
         output: 'output/bowtie/{smp}.bam',
 	params: ind = INDEX
 	threads: 15
 	conda: "env/env.yaml"
-    shell:''' bowtie2 -p 10 -x {params.ind} -1 {input.r1} -2 {input.r2} | samtools view -bS -q 30 - | samtools sort -@5 -m 20G - output/bowtie/{wildcards.smp}'''
+	shell:''' bowtie2 -p 10 -x {params.ind} -1 {input.r1} -2 {input.r2} | samtools view -bS -q 30 - | samtools sort -@5 -m 20G - output/bowtie/{wildcards.smp}'''
 
 rule samtools_index: #index
 	input:'output/bowtie/{smp}.bam'
