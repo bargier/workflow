@@ -46,7 +46,7 @@ rule sickle: #trim
 		sing = 'output/sickle/{smp}_sing.fastq.gz'
 	threads: 1
 	conda: "env/env.yaml"
-	shell: 'sickle pe -f {input.r1} -r {input.r2} -o {output.r1} -p {output.r2} -s{output.sing} -t sanger -g'
+	shell: 'sickle pe -f {input.r1} -r {input.r2} -o {output.r1} -p {output.r2} -s {output.sing} -t sanger -g'
 
 rule bowtie: #map
         input: r1 = 'output/sickle/{smp}_R1_001.fastq.gz', r2 = 'output/sickle/{smp}_R2_001.fastq.gz',
