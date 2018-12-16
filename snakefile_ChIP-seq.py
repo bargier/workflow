@@ -54,7 +54,7 @@ rule bowtie: #map
 	params: ind = INDEX
 	threads: 15
 	conda: "env/env.yaml"
-	shell:''' bowtie2 -p 10 -x {params.ind} -1 {input.r1} -2 {input.r2} | samtools view -bS -q 30 - | samtools sort -@5 -m 20G - output/bowtie/{wildcards.smp}'''
+	shell:''' bowtie2 -p 10 -x {params.ind} -1 {input.r1} -2 {input.r2} | samtools view -bS -q 30 - | samtools sort -@5 -m 20G -o {output}'''
 
 rule samtools_index: #index
 	input:'output/bowtie/{smp}.bam'
